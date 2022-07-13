@@ -10,7 +10,7 @@ import (
 type Config struct {
 	ApexApiKey string `env:"APEX_API_KEY"    env-required:"true"`
 	Loglevel   string `env:"LOG_LEVEL"       env-default:"error"`
-	BotDebug   bool   `env:"TGBOT_DEBUG"     env-default:false`
+	BotDebug   bool   `env:"TGBOT_DEBUG"     env-default:"false"`
 	BotApiKey  string `env:"TGBOT_API_KEY"   env-required:"true"`
 }
 
