@@ -1,5 +1,8 @@
 src/main
-tmp
-secrets.sh
-todo.txt
 skaffold/app-secret.yaml
+
+# temporary (in development)
+src_new
+k8s-prod
+migrations
+helm
