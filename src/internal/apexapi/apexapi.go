@@ -3,7 +3,6 @@ package apexapi
 import (
 	// "os"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -38,7 +37,7 @@ func (m *Maps) Update(apiKey string) error {
 
 	err = json.Unmarshal(body, &m)
 	if err != nil {
-		return errors.New(fmt.Sprintf("%s. body: %s", err, body))
+		return fmt.Errorf("%s. body: %s", err, body)
 	}
 	return nil
 }

@@ -55,7 +55,6 @@ func Run() {
 				return groupCtx.Err()
 			}
 		}
-		// return nil
 	})
 
 	bot, err := tgbotapi.NewBotAPI(conf.BotApiKey)
@@ -113,7 +112,6 @@ func Run() {
 				return groupCtx.Err()
 			}
 		}
-		//return nil
 	})
 
 	err = group.Wait()
