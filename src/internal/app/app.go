@@ -19,6 +19,7 @@ var maps apexapi.Maps
 var ctx, cancel = context.WithCancel(context.Background())
 var group, groupCtx = errgroup.WithContext(ctx)
 
+// Run func is similar to the main func.
 func Run() {
 
 	log.Info("Starting app")
@@ -39,7 +40,7 @@ func Run() {
 	})
 
 	group.Go(func() error {
-		if err := maps.Update(conf.ApexApiKey); err != nil {
+		if err := maps.Update(conf.ApexAPIKey); err != nil {
 			log.Error(err) // shit
 		} // get on start and then every interval seconds
 		interval := 60 // sec
@@ -47,7 +48,7 @@ func Run() {
 		for {
 			select {
 			case <-ticker.C:
-				if err := maps.Update(conf.ApexApiKey); err != nil {
+				if err := maps.Update(conf.ApexAPIKey); err != nil {
 					log.Error(err)
 				}
 			case <-groupCtx.Done():
@@ -57,7 +58,7 @@ func Run() {
 		}
 	})
 
-	bot, err := tgbotapi.NewBotAPI(conf.BotApiKey)
+	bot, err := tgbotapi.NewBotAPI(conf.BotAPIKey)
 	if err != nil {
 		log.Panic(err)
 	}

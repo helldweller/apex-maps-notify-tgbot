@@ -8,6 +8,7 @@ import (
 	"net/http"
 )
 
+// Map is a structure containing information about a scheduled map
 type Map struct {
 	Start int64  `json:"start"`
 	End   int64  `json:"end"`
@@ -16,11 +17,13 @@ type Map struct {
 	Asset string `json:"asset"`
 }
 
+// Maps is a structure containing information about current and next Map structures
 type Maps struct {
 	Current Map `json:"current"`
 	Next    Map `json:"next"`
 }
 
+// Update method to get information from mozambiquehe.re api
 func (m *Maps) Update(apiKey string) error {
 	// apiKey := os.Getenv("APEXLEGENDS_STATUS_API_KEY")
 	url := "https://api.mozambiquehe.re/maprotation?auth=" + apiKey
