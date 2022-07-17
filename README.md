@@ -6,20 +6,31 @@
     cp skaffold/app-secret-example.yaml skaffold/app-secret.yaml
     # and edit secrets
     minikube start
-    kubectl apply -f skaffold/app-secret.yaml
     eval $(minikube docker-env)
-    skaffold dev
+    kubectl config use-context minikube
+    skaffold run -p init
+    skaffold dev -p app
 
 ### Local
 
     cd src
     go build ./cmd/app/main.go
-    APEX_API_KEY=xxx LOG_LEVEL=info TGBOT_API_KEY='yyy' ./main
+    export APEX_API_KEY=xxx
+    export LOG_LEVEL=info
+    export TGBOT_API_KEY='yyy'
+    export MONGODB_URI=mongodb://localhost:27017/tgbot
+    ./main
 
 ### Docker
 
+    docker run -d --rm -v "data:/var/lib/mongodb" --name mongodb docker.io/mongo:5.0
     docker build -t apex-maps-tgbot .
-    docker run --rm -it --env "APEX_API_KEY=xxx" --env "LOG_LEVEL=info" --env "TGBOT_API_KEY=yyy" apex-maps-tgbot
+    docker run --rm -it \
+        --env "APEX_API_KEY=xxx" \
+        --env "LOG_LEVEL=info" \
+        --env "TGBOT_API_KEY=yyy" \
+        --env "MONGODB_URI=mongodb://mongodb:27017/tgbot"
+        apex-maps-tgbot
 
 
 ## todo

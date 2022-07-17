@@ -16,10 +16,19 @@ build:
         - "skaffold/*"
         - "skaffold.yaml"
         ignore: []
-deploy:
-  kubectl:
-    manifests:
-      - skaffold/app.yaml
+profiles:
+  - name: app
+    deploy:
+      kubectl:
+        manifests:
+          - skaffold/app.yaml
+  - name: init
+    deploy:
+      # kubeContext: minikube
+      kubectl:
+        manifests:
+          - skaffold/app-secret.yaml
+          - skaffold/mongo.yaml
 # portForward:
 #   - resourceType: Service
 #     resourceName: apex-maps-notify-tgbot
