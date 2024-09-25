@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"regexp"
 	"syscall"
 	"time"
 
@@ -59,6 +60,7 @@ func Run() {
 	})
 
 	bot, err := tgbotapi.NewBotAPI(conf.BotAPIKey)
+	md2regex := regexp.MustCompile(`(\_|\*|\[|\]|\(|\)|\~|\>|\#|\+|\-|\=|\||\{|\}|\.|\!)`)
 	if err != nil {
 		log.Panic(err)
 	}
@@ -92,8 +94,8 @@ func Run() {
 					nextDiff := nextStartAt.Sub(now)
 					nextLasts := nextEndAt.Sub(nextStartAt)
 					msg.Text = fmt.Sprintf("Карта сейчас *%s*\nСледующая карта *%s* через *%dч %dм* и продлится *%dч %dм*",
-						maps.Current.Map,
-						maps.Next.Map,
+						md2regex.ReplaceAllString(maps.Current.Map, `\$1`),
+						md2regex.ReplaceAllString(maps.Next.Map, `\$1`),
 						int(nextDiff.Hours()),
 						int(nextDiff.Minutes())-int(nextDiff.Hours())*60,
 						int(nextLasts.Hours()),
