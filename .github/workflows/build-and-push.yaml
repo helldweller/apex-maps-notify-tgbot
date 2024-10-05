@@ -50,7 +50,7 @@ jobs:
           tags: |
             type=ref,event=tag,enable=true,priority=600
             type=sha,prefix=sha-,format=short,enable=true,priority=200
-          images: ${{ format('{0}/{1}', 'ghcr.io', github.event.repo.name) }}
+          images: ${{ format('{0}/{1}', 'ghcr.io', github.repository) }}
       -
         name: Build and push Docker image
         uses: docker/build-push-action@v5
