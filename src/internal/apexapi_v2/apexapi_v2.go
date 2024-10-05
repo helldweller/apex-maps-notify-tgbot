@@ -1,4 +1,4 @@
-package apexapi
+package apexapi_v2
 
 import (
 	// "os"
@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 )
 
 // Map is a structure containing information about a scheduled map
@@ -23,12 +24,24 @@ type Maps struct {
 	Next    Map `json:"next"`
 }
 
-// Update method to get information from mozambiquehe.re api
-func (m *Maps) Update(apiKey string) error {
-	// apiKey := os.Getenv("APEXLEGENDS_STATUS_API_KEY")
-	url := "https://api.mozambiquehe.re/maprotation?auth=" + apiKey
+type V2 struct {
+	Ranked Maps `json:"ranked"`
+	Ltm    Maps `json:"ltm"`
+	Pub    Maps `json:"battle_royale"`
+}
 
-	resp, err := http.Get(url)
+// Update method to get information from mozambiquehe.re api
+func (v *V2) Update(apiKey string) error {
+	u, err := url.Parse("https://api.mozambiquehe.re/maprotation")
+	if err != nil {
+		return err
+	}
+	q := u.Query()
+	q.Set("auth", apiKey)
+	q.Set("version", "2")
+	u.RawQuery = q.Encode()
+
+	resp, err := http.Get(u.String())
 	if err != nil {
 		return err
 	}
@@ -38,7 +51,7 @@ func (m *Maps) Update(apiKey string) error {
 		return err
 	}
 
-	err = json.Unmarshal(body, &m)
+	err = json.Unmarshal(body, &v)
 	if err != nil {
 		return fmt.Errorf("%s. body: %s", err, body)
 	}

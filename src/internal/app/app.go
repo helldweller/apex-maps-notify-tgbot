@@ -13,10 +13,14 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"golang.org/x/sync/errgroup"
 
-	"package/main/internal/apexapi"
+	// "package/main/internal/apexapi"
+	"package/main/internal/apexapi_v2"
 )
 
-var maps apexapi.Maps
+// var maps apexapi.Maps
+var v2 apexapi_v2.V2
+
+// var rankedMaps v2.Ranked
 var ctx, cancel = context.WithCancel(context.Background())
 var group, groupCtx = errgroup.WithContext(ctx)
 
@@ -41,23 +45,42 @@ func Run() {
 	})
 
 	group.Go(func() error {
-		if err := maps.Update(conf.ApexAPIKey); err != nil {
+		if err := v2.Update(conf.ApexAPIKey); err != nil {
 			log.Error(err) // shit
 		} // get on start and then every interval seconds
-		interval := 60 // sec
+		interval := 120 // sec
 		ticker := time.NewTicker(time.Duration(interval) * time.Second)
 		for {
 			select {
 			case <-ticker.C:
-				if err := maps.Update(conf.ApexAPIKey); err != nil {
+				if err := v2.Update(conf.ApexAPIKey); err != nil {
 					log.Error(err)
 				}
 			case <-groupCtx.Done():
-				log.Error("Closing apexmaps goroutine")
+				log.Error("Closing apexmaps v2 goroutine")
 				return groupCtx.Err()
 			}
 		}
 	})
+
+	// group.Go(func() error {
+	// 	if err := maps.Update(conf.ApexAPIKey); err != nil {
+	// 		log.Error(err) // shit
+	// 	} // get on start and then every interval seconds
+	// 	interval := 120 // sec
+	// 	ticker := time.NewTicker(time.Duration(interval) * time.Second)
+	// 	for {
+	// 		select {
+	// 		case <-ticker.C:
+	// 			if err := maps.Update(conf.ApexAPIKey); err != nil {
+	// 				log.Error(err)
+	// 			}
+	// 		case <-groupCtx.Done():
+	// 			log.Error("Closing apexmaps goroutine")
+	// 			return groupCtx.Err()
+	// 		}
+	// 	}
+	// })
 
 	bot, err := tgbotapi.NewBotAPI(conf.BotAPIKey)
 	md2regex := regexp.MustCompile(`(\_|\*|\[|\]|\(|\)|\~|\>|\#|\+|\-|\=|\||\{|\}|\.|\!)`)
@@ -86,16 +109,51 @@ func Run() {
 
 				switch update.Message.Command() {
 				case "help":
-					msg.Text = "I understand /map"
+					msg.Text = "I understand /map /ranked"
 				case "map":
 					now := time.Now()
-					nextStartAt := time.Unix(maps.Next.Start, 0)
-					nextEndAt := time.Unix(maps.Next.End, 0)
+					nextStartAt := time.Unix(v2.Pub.Next.Start, 0)
+					nextEndAt := time.Unix(v2.Pub.Next.End, 0)
 					nextDiff := nextStartAt.Sub(now)
 					nextLasts := nextEndAt.Sub(nextStartAt)
-					msg.Text = fmt.Sprintf("Карта сейчас *%s*\nСледующая карта *%s* через *%dч %dм* и продлится *%dч %dм*",
-						md2regex.ReplaceAllString(maps.Current.Map, `\$1`),
-						md2regex.ReplaceAllString(maps.Next.Map, `\$1`),
+					msg.Text = fmt.Sprintf("Карта сейчас *%s*\nСледующая карта *%s* через *%dч %dм* и продлится *%dч %dм*\n[](%s)",
+						md2regex.ReplaceAllString(v2.Pub.Current.Map, `\$1`),
+						md2regex.ReplaceAllString(v2.Pub.Next.Map, `\$1`),
+						int(nextDiff.Hours()),
+						int(nextDiff.Minutes())-int(nextDiff.Hours())*60,
+						int(nextLasts.Hours()),
+						int(nextLasts.Minutes())-int(nextLasts.Hours())*60,
+						v2.Pub.Current.Asset,
+					)
+					msg.ReplyToMessageID = update.Message.MessageID
+					msg.ParseMode = "MarkdownV2"
+					log.Infof("Recived new message from user %s, chat ID %d", update.Message.From, update.Message.Chat.ID)
+				case "ranked":
+					now := time.Now()
+					nextStartAt := time.Unix(v2.Ranked.Next.Start, 0)
+					nextEndAt := time.Unix(v2.Ranked.Next.End, 0)
+					nextDiff := nextStartAt.Sub(now)
+					nextLasts := nextEndAt.Sub(nextStartAt)
+					msg.Text = fmt.Sprintf("Карта в рейтинге сейчас *%s*\nСледующая карта *%s* через *%dч %dм* и продлится *%dч %dм*",
+						md2regex.ReplaceAllString(v2.Ranked.Current.Map, `\$1`),
+						md2regex.ReplaceAllString(v2.Ranked.Next.Map, `\$1`),
+						int(nextDiff.Hours()),
+						int(nextDiff.Minutes())-int(nextDiff.Hours())*60,
+						int(nextLasts.Hours()),
+						int(nextLasts.Minutes())-int(nextLasts.Hours())*60,
+					)
+					msg.ReplyToMessageID = update.Message.MessageID
+					msg.ParseMode = "MarkdownV2"
+					log.Infof("Recived new message from user %s, chat ID %d", update.Message.From, update.Message.Chat.ID)
+				case "ltm":
+					now := time.Now()
+					nextStartAt := time.Unix(v2.Ltm.Next.Start, 0)
+					nextEndAt := time.Unix(v2.Ltm.Next.End, 0)
+					nextDiff := nextStartAt.Sub(now)
+					nextLasts := nextEndAt.Sub(nextStartAt)
+					msg.Text = fmt.Sprintf("Карта в рейтинге сейчас *%s*\nСледующая карта *%s* через *%dч %dм* и продлится *%dч %dм*",
+						md2regex.ReplaceAllString(v2.Ltm.Current.Map, `\$1`),
+						md2regex.ReplaceAllString(v2.Ltm.Next.Map, `\$1`),
 						int(nextDiff.Hours()),
 						int(nextDiff.Minutes())-int(nextDiff.Hours())*60,
 						int(nextLasts.Hours()),
