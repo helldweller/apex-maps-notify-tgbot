@@ -16,7 +16,7 @@ jobs:
       run:
         working-directory: ./src
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
 
     - name: Set up Go # https://github.com/actions/setup-go
       uses: actions/setup-go@v2
