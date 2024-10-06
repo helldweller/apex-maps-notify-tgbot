@@ -24,11 +24,10 @@
 
 ## todo
 
-Фичреквест: Добавть уведомление в указанный чат(или лично) о начале олимпуса (с ограничением отправки в определенные промежутки времени)
-
-    Helm chart
-    GitHub Actions:
-        pipeline тестов кач-ва кода для каждого коммита master/pr
-        gitops pipeline для деплоя при мерже мастера или создании релиза
-        secrets можно хранить в GitHub
-    
+* Map image upload
+    * Change bot to https://github.com/go-telegram/bot
+* Notification about the start of the map in a user-defined period of time
+    * Need some db
+* Helm chart
+    * External secrets from Github
+* Unit tests
