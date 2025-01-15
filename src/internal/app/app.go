@@ -87,18 +87,18 @@ func Run() {
 
 				switch update.Message.Command() {
 				case "help":
-					msg.Text = "I understand /map /ranked"
+					msg.Text = "I understand /map /ranked /ltm"
 				case "map":
 					now := time.Now()
 					nextStartAt := time.Unix(modes.Pub.Next.Start, 0)
 					nextEndAt := time.Unix(modes.Pub.Next.End, 0)
 					nextDiff := nextStartAt.Sub(now)
 					nextLasts := nextEndAt.Sub(nextStartAt)
-					msg.Text = fmt.Sprintf("Карта сейчас *%s*\nСледующая карта *%s* через *%dч %dм* и продлится *%dч %dм*\n[](%s)",
+					msg.Text = fmt.Sprintf("Карта сейчас *%s* и продлится *%dч %dм*\nСледующая карта *%s* и продлится *%dч %dм*\n[](%s)",
 						md2regex.ReplaceAllString(modes.Pub.Current.Map, `\$1`),
-						md2regex.ReplaceAllString(modes.Pub.Next.Map, `\$1`),
 						int(nextDiff.Hours()),
 						int(nextDiff.Minutes())-int(nextDiff.Hours())*60,
+					        md2regex.ReplaceAllString(modes.Pub.Next.Map, `\$1`),
 						int(nextLasts.Hours()),
 						int(nextLasts.Minutes())-int(nextLasts.Hours())*60,
 						modes.Pub.Current.Asset,
@@ -112,11 +112,11 @@ func Run() {
 					nextEndAt := time.Unix(modes.Ranked.Next.End, 0)
 					nextDiff := nextStartAt.Sub(now)
 					nextLasts := nextEndAt.Sub(nextStartAt)
-					msg.Text = fmt.Sprintf("Карта в рейтинге сейчас *%s*\nСледующая карта *%s* через *%dч %dм* и продлится *%dч %dм*",
+					msg.Text = fmt.Sprintf("Карта в рейтинге сейчас *%s* и продлится *%dч %dм*\nСледующая карта *%s* и продлится *%dч %dм*",
 						md2regex.ReplaceAllString(modes.Ranked.Current.Map, `\$1`),
-						md2regex.ReplaceAllString(modes.Ranked.Next.Map, `\$1`),
 						int(nextDiff.Hours()),
 						int(nextDiff.Minutes())-int(nextDiff.Hours())*60,
+						md2regex.ReplaceAllString(modes.Ranked.Next.Map, `\$1`),
 						int(nextLasts.Hours()),
 						int(nextLasts.Minutes())-int(nextLasts.Hours())*60,
 					)
@@ -129,11 +129,11 @@ func Run() {
 					nextEndAt := time.Unix(modes.Ltm.Next.End, 0)
 					nextDiff := nextStartAt.Sub(now)
 					nextLasts := nextEndAt.Sub(nextStartAt)
-					msg.Text = fmt.Sprintf("Карта в рейтинге сейчас *%s*\nСледующая карта *%s* через *%dч %dм* и продлится *%dч %dм*",
+					msg.Text = fmt.Sprintf("Карта в ltm сейчас *%s* и продлится *%dч %dм*\nСледующая карта *%s* и продлится *%dч %dм*",
 						md2regex.ReplaceAllString(modes.Ltm.Current.Map, `\$1`),
-						md2regex.ReplaceAllString(modes.Ltm.Next.Map, `\$1`),
 						int(nextDiff.Hours()),
 						int(nextDiff.Minutes())-int(nextDiff.Hours())*60,
+						md2regex.ReplaceAllString(modes.Ltm.Next.Map, `\$1`),
 						int(nextLasts.Hours()),
 						int(nextLasts.Minutes())-int(nextLasts.Hours())*60,
 					)
