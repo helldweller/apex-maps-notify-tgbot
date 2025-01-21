@@ -1,0 +1,9 @@
+---
+apiVersion: v2
+name: apex-maps-notify-tgbot
+description: Telegram bot for receiving information about current and next cards in Apex Legends
+type: application
+version: "1.0.2"
+appVersion: "1.0.2"
+
+dependencies: []

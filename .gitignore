@@ -1,5 +1,6 @@
 src/main
 skaffold/app-secret.yaml
+secret.env
 
 # temporary (in development)
 src_new
