@@ -16,19 +16,22 @@
     go build ./cmd/app/main.go
     APEX_API_KEY=xxx LOG_LEVEL=info TGBOT_API_KEY='yyy' ./main
 
-### Docker
+## Docker
 
     docker build -t apex-maps-tgbot .
+    # optional build for multi-arch
+    # docker buildx build --platform linux/amd64,linux/arm64 -t ghcr.io/helldweller/apex-maps-notify-tgbot:latest --push .
+    # docker buildx build --platform linux/amd64 -t ghcr.io/helldweller/apex-maps-notify-tgbot:latest --load .
     docker run --rm -it --env "APEX_API_KEY=xxx" --env "LOG_LEVEL=info" --env "TGBOT_API_KEY=yyy" apex-maps-tgbot
 
-### docker-compose
+### docker-compose (available amd64 and arm64)
 
     cp secret.env-example secret.env
     # and edit secret.env
     docker-compose up -d
     docker-compose up logs -f
 
-## Helm
+## Helm (available amd64 and arm64)
 
     kubectl create ns apex-maps-notify-tgbot
     kubectl create secret generic apex-maps-notify-tgbot -n apex-maps-notify-tgbot \
