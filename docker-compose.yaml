@@ -1,0 +1,13 @@
+version: "3.9"
+
+services:
+  apex-maps-notify-tgbot:
+    container_name: apex-maps-notify-tgbot
+    # build: .
+    image: ghcr.io/helldweller/apex-maps-notify-tgbot:1.0.3
+    restart: always
+    env_file:
+      - secret.env
+    environment:
+      LOG_LEVEL: info
+      TGBOT_DEBUG: false
