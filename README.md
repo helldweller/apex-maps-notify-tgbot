@@ -21,6 +21,13 @@
     docker build -t apex-maps-tgbot .
     docker run --rm -it --env "APEX_API_KEY=xxx" --env "LOG_LEVEL=info" --env "TGBOT_API_KEY=yyy" apex-maps-tgbot
 
+### docker-compose
+
+    cp secret.env-example secret.env
+    # and edit secret.env
+    docker-compose up -d
+    docker-compose up logs -f
+
 ## Helm
 
     kubectl create ns apex-maps-notify-tgbot
