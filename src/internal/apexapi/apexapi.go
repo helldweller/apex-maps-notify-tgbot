@@ -7,7 +7,20 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"time"
 )
+
+var client = &http.Client{Timeout: 30 * time.Second}
+
+// SetClient overrides the HTTP client used for Apex API requests.
+func SetClient(httpClient *http.Client) {
+	if httpClient == nil {
+		client = &http.Client{Timeout: 30 * time.Second}
+		return
+	}
+
+	client = httpClient
+}
 
 // Map is a structure containing information about a scheduled map
 type Map struct {
@@ -42,10 +55,11 @@ func (v *Modes) Update(apiKey string) error {
 	q.Set("version", "2")
 	u.RawQuery = q.Encode()
 
-	resp, err := http.Get(u.String())
+	resp, err := client.Get(u.String())
 	if err != nil {
 		return err
 	}
+	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
