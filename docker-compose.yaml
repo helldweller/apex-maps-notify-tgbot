@@ -11,6 +11,8 @@ services:
     environment:
       LOG_LEVEL: debug
       TGBOT_DEBUG: false
-      # HTTP_PROXY: "http://host.docker.internal:8080"
+      HTTP_PROXY: "http://host.docker.internal:8080"
     extra_hosts:
       - "host.docker.internal:host-gateway"
+
+# docker compose up --force-recreate --build

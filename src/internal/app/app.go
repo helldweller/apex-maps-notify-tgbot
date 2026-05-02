@@ -25,6 +25,12 @@ var modes apexapi.Modes
 var ctx, cancel = context.WithCancel(context.Background())
 var group, groupCtx = errgroup.WithContext(ctx)
 
+const (
+	defaultHTTPTimeout     = 30 * time.Second
+	telegramPollingTimeout = 60 * time.Second
+	telegramClientTimeout  = telegramPollingTimeout + 10*time.Second
+)
+
 func getExternalIP(httpClient *http.Client) (string, error) {
 	req, err := http.NewRequest(http.MethodGet, "https://ifconfig.io/ip", nil)
 	if err != nil {
@@ -58,7 +64,9 @@ func getExternalIP(httpClient *http.Client) (string, error) {
 func Run() {
 
 	log.Info("Starting app")
-	httpClient := &http.Client{Timeout: 30 * time.Second}
+	transport := http.DefaultTransport.(*http.Transport).Clone()
+	httpClient := &http.Client{Timeout: defaultHTTPTimeout, Transport: transport}
+	tgHTTPClient := &http.Client{Timeout: telegramClientTimeout, Transport: transport}
 
 	if conf.HttpProxy != "" {
 		proxyURL, err := url.Parse(conf.HttpProxy)
@@ -66,12 +74,7 @@ func Run() {
 			log.Fatalf("Invalid HTTP proxy URL: %v", err)
 		}
 
-		httpClient = &http.Client{
-			Timeout: 30 * time.Second,
-			Transport: &http.Transport{
-				Proxy: http.ProxyURL(proxyURL),
-			},
-		}
+		transport.Proxy = http.ProxyURL(proxyURL)
 	}
 
 	apexapi.SetClient(httpClient)
@@ -117,7 +120,7 @@ func Run() {
 		}
 	})
 
-	bot, err := tgbotapi.NewBotAPIWithClient(conf.BotAPIKey, tgbotapi.APIEndpoint, httpClient)
+	bot, err := tgbotapi.NewBotAPIWithClient(conf.BotAPIKey, tgbotapi.APIEndpoint, tgHTTPClient)
 	md2regex := regexp.MustCompile(`(\_|\*|\[|\]|\(|\)|\~|\>|\#|\+|\-|\=|\||\{|\}|\.|\!)`)
 	if err != nil {
 		log.Panic(err)
@@ -126,7 +129,7 @@ func Run() {
 	bot.Debug = conf.BotDebug
 	log.Infof("Authorized on account %s", bot.Self.UserName)
 	u := tgbotapi.NewUpdate(0)
-	u.Timeout = 60
+	u.Timeout = int(telegramPollingTimeout / time.Second)
 	updates := bot.GetUpdatesChan(u)
 
 	group.Go(func() error {
