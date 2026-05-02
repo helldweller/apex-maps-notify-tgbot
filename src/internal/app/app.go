@@ -68,8 +68,8 @@ func Run() {
 	httpClient := &http.Client{Timeout: defaultHTTPTimeout, Transport: transport}
 	tgHTTPClient := &http.Client{Timeout: telegramClientTimeout, Transport: transport}
 
-	if conf.HttpProxy != "" {
-		proxyURL, err := url.Parse(conf.HttpProxy)
+	if conf.HTTPProxy != "" {
+		proxyURL, err := url.Parse(conf.HTTPProxy)
 		if err != nil {
 			log.Fatalf("Invalid HTTP proxy URL: %v", err)
 		}
