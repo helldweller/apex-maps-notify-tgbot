@@ -4,9 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
+	"net/http"
+	"net/url"
 	"os"
 	"os/signal"
 	"regexp"
+	"strings"
 	"syscall"
 	"time"
 
@@ -21,10 +25,66 @@ var modes apexapi.Modes
 var ctx, cancel = context.WithCancel(context.Background())
 var group, groupCtx = errgroup.WithContext(ctx)
 
+const (
+	defaultHTTPTimeout     = 30 * time.Second
+	telegramPollingTimeout = 60 * time.Second
+	telegramClientTimeout  = telegramPollingTimeout + 10*time.Second
+)
+
+func getExternalIP(httpClient *http.Client) (string, error) {
+	req, err := http.NewRequest(http.MethodGet, "https://ifconfig.io/ip", nil)
+	if err != nil {
+		return "", err
+	}
+
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("unexpected status: %s", resp.Status)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+
+	ip := strings.TrimSpace(string(body))
+	if ip == "" {
+		return "", fmt.Errorf("empty IP response")
+	}
+
+	return ip, nil
+}
+
 // Run func is similar to the main func.
 func Run() {
 
 	log.Info("Starting app")
+	transport := http.DefaultTransport.(*http.Transport).Clone()
+	httpClient := &http.Client{Timeout: defaultHTTPTimeout, Transport: transport}
+	tgHTTPClient := &http.Client{Timeout: telegramClientTimeout, Transport: transport}
+
+	if conf.HTTPProxy != "" {
+		proxyURL, err := url.Parse(conf.HTTPProxy)
+		if err != nil {
+			log.Fatalf("Invalid HTTP proxy URL: %v", err)
+		}
+
+		transport.Proxy = http.ProxyURL(proxyURL)
+	}
+
+	apexapi.SetClient(httpClient)
+
+	externalIP, err := getExternalIP(httpClient)
+	if err != nil {
+		log.Errorf("Failed to detect external IP: %v", err)
+	} else {
+		log.Infof("Application external IP: %s", externalIP)
+	}
 
 	group.Go(func() error {
 		signalChannel := make(chan os.Signal, 1)
@@ -60,7 +120,7 @@ func Run() {
 		}
 	})
 
-	bot, err := tgbotapi.NewBotAPI(conf.BotAPIKey)
+	bot, err := tgbotapi.NewBotAPIWithClient(conf.BotAPIKey, tgbotapi.APIEndpoint, tgHTTPClient)
 	md2regex := regexp.MustCompile(`(\_|\*|\[|\]|\(|\)|\~|\>|\#|\+|\-|\=|\||\{|\}|\.|\!)`)
 	if err != nil {
 		log.Panic(err)
@@ -69,7 +129,7 @@ func Run() {
 	bot.Debug = conf.BotDebug
 	log.Infof("Authorized on account %s", bot.Self.UserName)
 	u := tgbotapi.NewUpdate(0)
-	u.Timeout = 60
+	u.Timeout = int(telegramPollingTimeout / time.Second)
 	updates := bot.GetUpdatesChan(u)
 
 	group.Go(func() error {
@@ -97,8 +157,7 @@ func Run() {
 					msg.Text = fmt.Sprintf("Карта сейчас *%s* и продлится *%dч %dм*\nСледующая карта *%s* и продлится *%dч %dм*\n[](%s)",
 						md2regex.ReplaceAllString(modes.Pub.Current.Map, `\$1`),
 						int(nextDiff.Hours()),
-						int(nextDiff.Minutes())-int(nextDiff.Hours())*60,
-					        md2regex.ReplaceAllString(modes.Pub.Next.Map, `\$1`),
+						int(nextDiff.Minutes())-int(nextDiff.Hours())*60, md2regex.ReplaceAllString(modes.Pub.Next.Map, `\$1`),
 						int(nextLasts.Hours()),
 						int(nextLasts.Minutes())-int(nextLasts.Hours())*60,
 						modes.Pub.Current.Asset,
@@ -115,8 +174,7 @@ func Run() {
 					msg.Text = fmt.Sprintf("Карта в рейтинге сейчас *%s* и продлится *%dч %dм*\nСледующая карта *%s* и продлится *%dч %dм*",
 						md2regex.ReplaceAllString(modes.Ranked.Current.Map, `\$1`),
 						int(nextDiff.Hours()),
-						int(nextDiff.Minutes())-int(nextDiff.Hours())*60,
-						md2regex.ReplaceAllString(modes.Ranked.Next.Map, `\$1`),
+						int(nextDiff.Minutes())-int(nextDiff.Hours())*60, md2regex.ReplaceAllString(modes.Ranked.Next.Map, `\$1`),
 						int(nextLasts.Hours()),
 						int(nextLasts.Minutes())-int(nextLasts.Hours())*60,
 					)
@@ -132,8 +190,7 @@ func Run() {
 					msg.Text = fmt.Sprintf("Карта в ltm сейчас *%s* и продлится *%dч %dм*\nСледующая карта *%s* и продлится *%dч %dм*",
 						md2regex.ReplaceAllString(modes.Ltm.Current.Map, `\$1`),
 						int(nextDiff.Hours()),
-						int(nextDiff.Minutes())-int(nextDiff.Hours())*60,
-						md2regex.ReplaceAllString(modes.Ltm.Next.Map, `\$1`),
+						int(nextDiff.Minutes())-int(nextDiff.Hours())*60, md2regex.ReplaceAllString(modes.Ltm.Next.Map, `\$1`),
 						int(nextLasts.Hours()),
 						int(nextLasts.Minutes())-int(nextLasts.Hours())*60,
 					)

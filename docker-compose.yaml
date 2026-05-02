@@ -3,11 +3,16 @@ version: "3.9"
 services:
   apex-maps-notify-tgbot:
     container_name: apex-maps-notify-tgbot
-    # build: .
-    image: ghcr.io/helldweller/apex-maps-notify-tgbot:1.0.3
+    build: .
+    # image: ghcr.io/helldweller/apex-maps-notify-tgbot:1.0.4
     restart: always
     env_file:
       - secret.env
     environment:
-      LOG_LEVEL: info
+      LOG_LEVEL: debug
       TGBOT_DEBUG: false
+      HTTP_PROXY: "http://host.docker.internal:8080"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+# docker compose up --force-recreate --build
