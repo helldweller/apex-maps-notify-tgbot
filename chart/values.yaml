@@ -17,4 +17,4 @@ image:
       - name: LOG_LEVEL
         value: info
       - name: HTTP_PROXY
-        value: "xray-client.xray:8080"
+        value: "http://xray-client.xray:8080"
