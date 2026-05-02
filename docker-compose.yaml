@@ -9,5 +9,8 @@ services:
     env_file:
       - secret.env
     environment:
-      LOG_LEVEL: info
+      LOG_LEVEL: debug
       TGBOT_DEBUG: false
+      # HTTP_PROXY: "http://host.docker.internal:8080"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
