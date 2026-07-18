@@ -9,7 +9,6 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
-	"regexp"
 	"strings"
 	"syscall"
 	"time"
@@ -20,7 +19,7 @@ import (
 	"package/main/internal/apexapi"
 )
 
-var modes apexapi.Modes
+var store modesStore
 
 var ctx, cancel = context.WithCancel(context.Background())
 var group, groupCtx = errgroup.WithContext(ctx)
@@ -63,6 +62,13 @@ func getExternalIP(httpClient *http.Client) (string, error) {
 // Run func is similar to the main func.
 func Run() {
 
+	conf, err := loadConfig()
+	if err != nil {
+		fmt.Printf("Something went wrong while reading the configuration: %s", err)
+		os.Exit(1)
+	}
+	configureLogger(conf)
+
 	log.Info("Starting app")
 	transport := http.DefaultTransport.(*http.Transport).Clone()
 	httpClient := &http.Client{Timeout: defaultHTTPTimeout, Transport: transport}
@@ -102,17 +108,24 @@ func Run() {
 	})
 
 	group.Go(func() error {
-		if err := modes.Update(conf.ApexAPIKey); err != nil {
-			log.Error(err) // shit
-		} // get on start and then every interval seconds
-		interval := 120 // sec
-		ticker := time.NewTicker(time.Duration(interval) * time.Second)
+		// refresh fetches a fresh rotation without holding the store lock during
+		// network I/O, then atomically swaps it in.
+		refresh := func() {
+			var fresh apexapi.Modes
+			if err := fresh.Update(conf.ApexAPIKey); err != nil {
+				log.Errorf("Failed to update map rotation: %v", err)
+				return
+			}
+			store.set(fresh)
+		}
+
+		refresh() // get on start and then every UpdateInterval
+		ticker := time.NewTicker(conf.UpdateInterval)
+		defer ticker.Stop()
 		for {
 			select {
 			case <-ticker.C:
-				if err := modes.Update(conf.ApexAPIKey); err != nil {
-					log.Error(err)
-				}
+				refresh()
 			case <-groupCtx.Done():
 				log.Error("Closing apexmaps modes goroutine")
 				return groupCtx.Err()
@@ -121,7 +134,6 @@ func Run() {
 	})
 
 	bot, err := tgbotapi.NewBotAPIWithClient(conf.BotAPIKey, tgbotapi.APIEndpoint, tgHTTPClient)
-	md2regex := regexp.MustCompile(`(\_|\*|\[|\]|\(|\)|\~|\>|\#|\+|\-|\=|\||\{|\}|\.|\!)`)
 	if err != nil {
 		log.Panic(err)
 	}
@@ -145,60 +157,26 @@ func Run() {
 
 				msg := tgbotapi.NewMessage(update.Message.Chat.ID, "")
 
-				switch update.Message.Command() {
+				command := update.Message.Command()
+				switch command {
 				case "help":
 					msg.Text = "I understand /map /ranked /ltm"
 				case "map":
-					now := time.Now()
-					nextStartAt := time.Unix(modes.Pub.Next.Start, 0)
-					nextEndAt := time.Unix(modes.Pub.Next.End, 0)
-					nextDiff := nextStartAt.Sub(now)
-					nextLasts := nextEndAt.Sub(nextStartAt)
-					msg.Text = fmt.Sprintf("Карта сейчас *%s* и продлится *%dч %dм*\nСледующая карта *%s* и продлится *%dч %dм*\n[](%s)",
-						md2regex.ReplaceAllString(modes.Pub.Current.Map, `\$1`),
-						int(nextDiff.Hours()),
-						int(nextDiff.Minutes())-int(nextDiff.Hours())*60, md2regex.ReplaceAllString(modes.Pub.Next.Map, `\$1`),
-						int(nextLasts.Hours()),
-						int(nextLasts.Minutes())-int(nextLasts.Hours())*60,
-						modes.Pub.Current.Asset,
-					)
-					msg.ReplyToMessageID = update.Message.MessageID
-					msg.ParseMode = "MarkdownV2"
-					log.Infof("Recived new message from user %s, chat ID %d", update.Message.From, update.Message.Chat.ID)
+					msg.Text = formatMode("", store.get().Pub, time.Now(), true)
 				case "ranked":
-					now := time.Now()
-					nextStartAt := time.Unix(modes.Ranked.Next.Start, 0)
-					nextEndAt := time.Unix(modes.Ranked.Next.End, 0)
-					nextDiff := nextStartAt.Sub(now)
-					nextLasts := nextEndAt.Sub(nextStartAt)
-					msg.Text = fmt.Sprintf("Карта в рейтинге сейчас *%s* и продлится *%dч %dм*\nСледующая карта *%s* и продлится *%dч %dм*",
-						md2regex.ReplaceAllString(modes.Ranked.Current.Map, `\$1`),
-						int(nextDiff.Hours()),
-						int(nextDiff.Minutes())-int(nextDiff.Hours())*60, md2regex.ReplaceAllString(modes.Ranked.Next.Map, `\$1`),
-						int(nextLasts.Hours()),
-						int(nextLasts.Minutes())-int(nextLasts.Hours())*60,
-					)
-					msg.ReplyToMessageID = update.Message.MessageID
-					msg.ParseMode = "MarkdownV2"
-					log.Infof("Recived new message from user %s, chat ID %d", update.Message.From, update.Message.Chat.ID)
+					msg.Text = formatMode("в рейтинге ", store.get().Ranked, time.Now(), false)
 				case "ltm":
-					now := time.Now()
-					nextStartAt := time.Unix(modes.Ltm.Next.Start, 0)
-					nextEndAt := time.Unix(modes.Ltm.Next.End, 0)
-					nextDiff := nextStartAt.Sub(now)
-					nextLasts := nextEndAt.Sub(nextStartAt)
-					msg.Text = fmt.Sprintf("Карта в ltm сейчас *%s* и продлится *%dч %dм*\nСледующая карта *%s* и продлится *%dч %dм*",
-						md2regex.ReplaceAllString(modes.Ltm.Current.Map, `\$1`),
-						int(nextDiff.Hours()),
-						int(nextDiff.Minutes())-int(nextDiff.Hours())*60, md2regex.ReplaceAllString(modes.Ltm.Next.Map, `\$1`),
-						int(nextLasts.Hours()),
-						int(nextLasts.Minutes())-int(nextLasts.Hours())*60,
-					)
-					msg.ReplyToMessageID = update.Message.MessageID
-					msg.ParseMode = "MarkdownV2"
-					log.Infof("Recived new message from user %s, chat ID %d", update.Message.From, update.Message.Chat.ID)
+					msg.Text = formatMode("в ltm ", store.get().Ltm, time.Now(), false)
 				default:
 					msg.Text = "I don't know that command, use /help"
+				}
+
+				// The map/ranked/ltm replies are formatted MarkdownV2 answers to
+				// the triggering message; help/unknown are plain replies.
+				if command == "map" || command == "ranked" || command == "ltm" {
+					msg.ReplyToMessageID = update.Message.MessageID
+					msg.ParseMode = "MarkdownV2"
+					log.Infof("Recived new message from user %s, chat ID %d", update.Message.From, update.Message.Chat.ID)
 				}
 				if _, err := bot.Send(msg); err != nil {
 					log.Error(err)
