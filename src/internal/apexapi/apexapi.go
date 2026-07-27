@@ -11,6 +11,7 @@ import (
 )
 
 var client = &http.Client{Timeout: 30 * time.Second}
+var mapRotationURL = "https://api.mozambiquehe.re/maprotation"
 
 // SetClient overrides the HTTP client used for Apex API requests.
 func SetClient(httpClient *http.Client) {
@@ -20,6 +21,18 @@ func SetClient(httpClient *http.Client) {
 	}
 
 	client = httpClient
+}
+
+// SetBaseURL overrides the map rotation endpoint used for Apex API requests.
+// An empty url resets it to the default mozambiquehe.re endpoint. Intended
+// for pointing at a mock server in tests/local runs.
+func SetBaseURL(url string) {
+	if url == "" {
+		mapRotationURL = "https://api.mozambiquehe.re/maprotation"
+		return
+	}
+
+	mapRotationURL = url
 }
 
 // Map is a structure containing information about a scheduled map
@@ -46,7 +59,7 @@ type Modes struct {
 
 // Update method to get information from mozambiquehe.re api
 func (v *Modes) Update(apiKey string) error {
-	u, err := url.Parse("https://api.mozambiquehe.re/maprotation")
+	u, err := url.Parse(mapRotationURL)
 	if err != nil {
 		return err
 	}

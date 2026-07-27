@@ -59,7 +59,7 @@ func TestFormatModeBattleRoyale(t *testing.T) {
 	want := "Карта сейчас *E\\-District* и продлится *1ч 30м*\n" +
 		"Следующая карта *Olympus* и продлится *2ч 15м*\n" +
 		"[](https://example.com/we.png)"
-	if got := formatMode("", m, now, true); got != want {
+	if got := formatMode("", m, now, true, false); got != want {
 		t.Errorf("formatMode battle royale:\n got: %q\nwant: %q", got, want)
 	}
 }
@@ -68,7 +68,7 @@ func TestFormatModeRanked(t *testing.T) {
 	m, now := fixtureMaps("E-District", "Olympus", "ignored")
 	want := "Карта в рейтинге сейчас *E\\-District* и продлится *1ч 30м*\n" +
 		"Следующая карта *Olympus* и продлится *2ч 15м*"
-	if got := formatMode("в рейтинге ", m, now, false); got != want {
+	if got := formatMode("в рейтинге ", m, now, false, false); got != want {
 		t.Errorf("formatMode ranked:\n got: %q\nwant: %q", got, want)
 	}
 }
@@ -77,7 +77,25 @@ func TestFormatModeLtm(t *testing.T) {
 	m, now := fixtureMaps("E-District", "Olympus", "ignored")
 	want := "Карта в ltm сейчас *E\\-District* и продлится *1ч 30м*\n" +
 		"Следующая карта *Olympus* и продлится *2ч 15м*"
-	if got := formatMode("в ltm ", m, now, false); got != want {
+	if got := formatMode("в ltm ", m, now, false, false); got != want {
 		t.Errorf("formatMode ltm:\n got: %q\nwant: %q", got, want)
+	}
+}
+
+func TestFormatModeTrueNames(t *testing.T) {
+	m, now := fixtureMaps("E-District", "Olympus", "ignored")
+	want := "Карта сейчас *Dristrict 💩💩💩* и продлится *1ч 30м*\n" +
+		"Следующая карта *Olympus* и продлится *2ч 15м*"
+	if got := formatMode("", m, now, false, true); got != want {
+		t.Errorf("formatMode true names (mapped):\n got: %q\nwant: %q", got, want)
+	}
+}
+
+func TestFormatModeTrueNamesUnmapped(t *testing.T) {
+	m, now := fixtureMaps("Olympus", "World's Edge", "ignored")
+	want := "Карта сейчас *Olympus* и продлится *1ч 30м*\n" +
+		"Следующая карта *World's Edge* и продлится *2ч 15м*"
+	if got := formatMode("", m, now, false, true); got != want {
+		t.Errorf("formatMode true names (unmapped):\n got: %q\nwant: %q", got, want)
 	}
 }

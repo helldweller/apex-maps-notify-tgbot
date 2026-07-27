@@ -10,6 +10,7 @@ import (
 // Config is the main configuration structure of this application
 type Config struct {
 	ApexAPIKey     string        `env:"APEX_API_KEY"    env-required:"true"`
+	ApexAPIBaseURL string        `env:"APEX_API_BASE_URL" env-default:""`
 	Loglevel       string        `env:"LOG_LEVEL"       env-default:"error"`
 	BotDebug       bool          `env:"TGBOT_DEBUG"     env-default:"false"`
 	BotAPIKey      string        `env:"TGBOT_API_KEY"   env-required:"true"`

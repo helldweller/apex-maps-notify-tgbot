@@ -20,6 +20,7 @@ import (
 )
 
 var store modesStore
+var chatSettings chatSettingsStore
 
 var ctx, cancel = context.WithCancel(context.Background())
 var group, groupCtx = errgroup.WithContext(ctx)
@@ -84,6 +85,7 @@ func Run() {
 	}
 
 	apexapi.SetClient(httpClient)
+	apexapi.SetBaseURL(conf.ApexAPIBaseURL)
 
 	externalIP, err := getExternalIP(httpClient)
 	if err != nil {
@@ -160,13 +162,19 @@ func Run() {
 				command := update.Message.Command()
 				switch command {
 				case "help":
-					msg.Text = "I understand /map /ranked /ltm"
+					msg.Text = "I understand /map /ranked /ltm /true_names"
 				case "map":
-					msg.Text = formatMode("", store.get().Pub, time.Now(), true)
+					msg.Text = formatMode("", store.get().Pub, time.Now(), true, chatSettings.enabled(update.Message.Chat.ID))
 				case "ranked":
-					msg.Text = formatMode("в рейтинге ", store.get().Ranked, time.Now(), false)
+					msg.Text = formatMode("в рейтинге ", store.get().Ranked, time.Now(), false, chatSettings.enabled(update.Message.Chat.ID))
 				case "ltm":
-					msg.Text = formatMode("в ltm ", store.get().Ltm, time.Now(), false)
+					msg.Text = formatMode("в ltm ", store.get().Ltm, time.Now(), false, chatSettings.enabled(update.Message.Chat.ID))
+				case "true_names":
+					if chatSettings.toggle(update.Message.Chat.ID) {
+						msg.Text = "Настоящие имена карт включены 💩"
+					} else {
+						msg.Text = "Настоящие имена карт выключены"
+					}
 				default:
 					msg.Text = "I don't know that command, use /help"
 				}

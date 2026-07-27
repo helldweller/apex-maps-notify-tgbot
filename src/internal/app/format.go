@@ -27,20 +27,28 @@ func hoursAndMinutes(d time.Duration) (hours, minutes int) {
 //
 // prefix is inserted between "Карта " and "сейчас" ("" for battle royale,
 // "в рейтинге " for ranked, "в ltm " for ltm). When withAsset is true the
-// current map asset link is appended on its own line.
-func formatMode(prefix string, maps apexapi.Maps, now time.Time, withAsset bool) string {
+// current map asset link is appended on its own line. When useTrueNames is
+// true, map names are substituted via trueName before being inserted.
+func formatMode(prefix string, maps apexapi.Maps, now time.Time, withAsset bool, useTrueNames bool) string {
 	nextStartAt := time.Unix(maps.Next.Start, 0)
 	nextEndAt := time.Unix(maps.Next.End, 0)
 
 	currentHours, currentMinutes := hoursAndMinutes(nextStartAt.Sub(now))
 	nextHours, nextMinutes := hoursAndMinutes(nextEndAt.Sub(nextStartAt))
 
+	currentMap := maps.Current.Map
+	nextMap := maps.Next.Map
+	if useTrueNames {
+		currentMap = trueName(currentMap)
+		nextMap = trueName(nextMap)
+	}
+
 	text := fmt.Sprintf(
 		"Карта %sсейчас *%s* и продлится *%dч %dм*\nСледующая карта *%s* и продлится *%dч %dм*",
 		prefix,
-		escapeMarkdownV2(maps.Current.Map),
+		escapeMarkdownV2(currentMap),
 		currentHours, currentMinutes,
-		escapeMarkdownV2(maps.Next.Map),
+		escapeMarkdownV2(nextMap),
 		nextHours, nextMinutes,
 	)
 

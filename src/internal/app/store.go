@@ -27,3 +27,27 @@ func (s *modesStore) get() apexapi.Modes {
 	defer s.mu.RUnlock()
 	return s.data
 }
+
+// chatSettingsStore tracks per-chat true-names toggle state in memory.
+type chatSettingsStore struct {
+	mu   sync.RWMutex
+	data map[int64]bool
+}
+
+// toggle flips the true-names setting for chatID and returns the new state.
+func (s *chatSettingsStore) toggle(chatID int64) bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.data == nil {
+		s.data = make(map[int64]bool)
+	}
+	s.data[chatID] = !s.data[chatID]
+	return s.data[chatID]
+}
+
+// enabled reports whether true-names is on for chatID.
+func (s *chatSettingsStore) enabled(chatID int64) bool {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.data[chatID]
+}
