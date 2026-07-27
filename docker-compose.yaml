@@ -4,7 +4,7 @@ services:
   apex-maps-notify-tgbot:
     container_name: apex-maps-notify-tgbot
     build: .
-    # image: ghcr.io/helldweller/apex-maps-notify-tgbot:1.1.0
+    # image: ghcr.io/helldweller/apex-maps-notify-tgbot:1.1.1
     restart: always
     env_file:
       - secret.env
